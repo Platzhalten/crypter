@@ -1,6 +1,7 @@
 import string
 import random
 import secrets
+import FreeSimpleGUI as sg
 
 buchstaben_list = []
 
@@ -15,10 +16,10 @@ class Key:
 
         self.key_list = None
         self.key = key
-        self.end = secrets.token_urlsafe(2)
+        self.safe_key = secrets.token_urlsafe(2)
 
         self.key_change = key
-        self.end_change = self.end
+        self.safe_key_change = self.safe_key
 
         random.seed(key)
 
@@ -34,25 +35,26 @@ class Key:
     def shuffle(self, end: str = None):
 
         if end is not None:
-            self.end_change = end
+            self.safe_key_change = end
 
-        random.seed(f"{self.key_change} {self.end_change}")
+        random.seed(f"{self.key_change} {self.safe_key_change}")
 
         self.key_change = self.key_change + str(random.random())
 
         temp_list = buchstaben_list.copy()
         random.shuffle(temp_list)
 
-        print(temp_list)
-
         self.random_buchstaben = temp_list.copy()
 
     def reset(self):
         self.key_change = self.key
-        self.end_change = self.end
+        self.safe_key_change = self.safe_key
+
+    def newSafeKey(self):
+        self.safe_key = secrets.token_urlsafe(2)
+        self.safe_key_change = self.safe_key
 
 
-key = Key(input("Was soll der Key sein? "))
 
 def crypt(text: str) -> str:
 
@@ -78,7 +80,9 @@ def crypt(text: str) -> str:
 
         verschluselt.append(last)
 
-    verschluselt.append(key.end)
+    verschluselt.append(key.safe_key)
+
+    key.newSafeKey()
 
     return "".join(verschluselt)
 
@@ -103,13 +107,40 @@ def encrypt(text: str) -> str:
 
     return "".join(entschluselt).lower()
 
+layout = [[sg.T("Enter the Key here"), sg.Input(key="key-key"), sg.Button(button_text="Enter", key="key-enter")],
+          [sg.T("Decrypt              "), sg.InputText(key="dec-text", disabled=True), sg.Button(button_text="Enter", key="dec-enter", disabled=True)],
+          [sg.T("Decrypted           "), sg.Input(key="dec-text2", disabled=True)],
+          [sg.T("Encrypt              "), sg.Input(key="enc-text", disabled=True), sg.Button(button_text="Enter", key="enc-enter", disabled=True)],
+          [sg.T("Encrypted           "), sg.Input(key="enc-text2", disabled=True)]]
 
-message  = input("Was soll Ent/Verschlüsselt werden?: ")
+w = sg.Window(title="gf", layout=layout)
 
-x = crypt(message)
+while True:
 
-print("Verschlüßelt: ", x)
+    e, v = w.read()
 
-x = encrypt(x)
+    if e is None:
+        w.close()
+        break
 
-print("Entschlüßelt: ", x)
+
+    if e == "key-enter":
+        key = Key(v["key-key"])
+
+
+        for i in ["enc-text", "enc-enter", "enc-text2", "dec-text", "dec-text2", "dec-enter"]:
+            w[i].update(disabled=False)
+
+        w["key-key"].update(password_char="*", disabled=True)
+
+        w["key-enter"].update(disabled=True)
+
+
+    if e == "enc-enter":
+        wert = encrypt(v["enc-text"])
+        w["enc-text2"](wert)
+
+    if e == "dec-enter":
+        wert = crypt(v["dec-text"])
+
+        w["dec-text2"](wert)
