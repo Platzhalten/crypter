@@ -8,6 +8,7 @@ def get_settings(what: list = None) -> dict:
     if what:
 
         for i in what:
+            print(i)
             setting = setting[i]
 
         return setting

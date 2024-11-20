@@ -2,6 +2,7 @@ import string
 import random
 import secrets
 import FreeSimpleGUI as sg
+from FreeSimpleGUI import preview_all_look_and_feel_themes
 
 from settings import get_settings as get_settings
 
@@ -16,15 +17,16 @@ class Key:
 
     def __init__(self, key: str):
 
+        self.last_save_token = None
+        self.save_key_range = None
         self.key_list = None
         self.key = key
 
-        self.last_save_token = secrets.token_urlsafe(1)[0]
-        random.seed(f"{self.key[::2]} {self.last_save_token}")
-        self.save_key_range = random.choice(get_settings(["crypt", "save_key_bytes_range"]))
+        self.save_key = None
+        self.save_key_range_pos = get_settings(["crypt", "safe_key_bytes_range"])
 
+        self.newsaveKey()
 
-        self.save_key = secrets.token_urlsafe(self.save_key_range) + self.last_save_token
         self.key_change = key
         self.save_key_change = self.save_key
 
@@ -60,10 +62,14 @@ class Key:
     def newsaveKey(self):
         self.last_save_token = secrets.token_urlsafe(1)[0]
         random.seed(f"{self.key[::2]} {self.last_save_token}")
-        self.save_key_range = random.choice(get_settings(["crypt", "save_key_bytes_range"]))
+        self.save_key_range = random.randint(self.save_key_range_pos[0], self.save_key_range_pos[1])
 
-        self.save_key = secrets.token_urlsafe(self.save_key_range) + self.last_save_token
+        self.save_key = secrets.token_urlsafe(100)[0:self.save_key_range] + self.last_save_token
+        print(len(self.save_key))
 
+    def getsavekeylengt(self, last_letter: str):
+        random.seed(f"{self.key[::2]} {last_letter}")
+        return random.choice(self.save_key_range_pos) + 1
 
 def crypt(text: str) -> str:
 
@@ -104,9 +110,11 @@ def encrypt(text: str) -> str:
 
     random.seed(key.key)
 
-    for i in text[:-3]:
+    key_lengt = key.getsavekeylengt(text[-1])
 
-        key.shuffle(text[-3:])
+    for i in text[:-key_lengt]:
+
+        key.shuffle(text[-key_lengt:])
 
         index = key.getitem(i)
 
