@@ -2,7 +2,6 @@ import string
 import random
 import secrets
 import FreeSimpleGUI as sg
-from FreeSimpleGUI import preview_all_look_and_feel_themes
 
 from settings import get_settings as get_settings
 
@@ -65,7 +64,6 @@ class Key:
         self.save_key_range = random.randint(self.save_key_range_pos[0], self.save_key_range_pos[1])
 
         self.save_key = secrets.token_urlsafe(100)[0:self.save_key_range] + self.last_save_token
-        print(len(self.save_key))
 
     def getsavekeylengt(self, last_letter: str):
         random.seed(f"{self.key[::2]} {last_letter}")

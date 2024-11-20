@@ -1,6 +1,5 @@
 import json
 
-
 def get_settings(what: list = None) -> dict:
     with open("settings/settings.json", "r") as f:
         setting = json.load(f)
@@ -8,7 +7,6 @@ def get_settings(what: list = None) -> dict:
     if what:
 
         for i in what:
-            print(i)
             setting = setting[i]
 
         return setting
