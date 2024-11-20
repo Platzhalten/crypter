@@ -3,6 +3,8 @@ import random
 import secrets
 import FreeSimpleGUI as sg
 
+from settings import get_settings as get_settings
+
 buchstaben_list = []
 
 string_list = string.printable[0:-4]
@@ -14,12 +16,18 @@ class Key:
 
     def __init__(self, key: str):
 
+        self.last_save_token = None
+        self.save_key_range = None
         self.key_list = None
         self.key = key
-        self.safe_key = secrets.token_urlsafe(2)
+
+        self.save_key = None
+        self.save_key_range_pos = get_settings(["crypt", "safe_key_bytes_range"])
+
+        self.newsaveKey()
 
         self.key_change = key
-        self.safe_key_change = self.safe_key
+        self.save_key_change = self.save_key
 
         random.seed(key)
 
@@ -32,12 +40,12 @@ class Key:
     def getitem(self, item):
         return self.random_buchstaben.index(item)
 
-    def shuffle(self, end: str = None):
+    def shuffle(self, save_key: str = None):
 
-        if end is not None:
-            self.safe_key_change = end
+        if save_key is not None:
+            self.save_key_change = save_key
 
-        random.seed(f"{self.key_change} {self.safe_key_change}")
+        random.seed(f"{self.key_change} {self.save_key_change}")
 
         self.key_change = self.key_change + str(random.random())
 
@@ -48,13 +56,18 @@ class Key:
 
     def reset(self):
         self.key_change = self.key
-        self.safe_key_change = self.safe_key
+        self.save_key_change = self.save_key
 
-    def newSafeKey(self):
-        self.safe_key = secrets.token_urlsafe(2)
-        self.safe_key_change = self.safe_key
+    def newsaveKey(self):
+        self.last_save_token = secrets.token_urlsafe(1)[0]
+        random.seed(f"{self.key[::2]} {self.last_save_token}")
+        self.save_key_range = random.randint(self.save_key_range_pos[0], self.save_key_range_pos[1])
 
+        self.save_key = secrets.token_urlsafe(100)[0:self.save_key_range] + self.last_save_token
 
+    def getsavekeylengt(self, last_letter: str):
+        random.seed(f"{self.key[::2]} {last_letter}")
+        return random.choice(self.save_key_range_pos) + 1
 
 def crypt(text: str) -> str:
 
@@ -80,9 +93,9 @@ def crypt(text: str) -> str:
 
         verschluselt.append(last)
 
-    verschluselt.append(key.safe_key)
+    verschluselt.append(key.save_key)
 
-    key.newSafeKey()
+    key.newsaveKey()
 
     return "".join(verschluselt)
 
@@ -95,9 +108,11 @@ def encrypt(text: str) -> str:
 
     random.seed(key.key)
 
-    for i in text[:-3]:
+    key_lengt = key.getsavekeylengt(text[-1])
 
-        key.shuffle(text[-3:])
+    for i in text[:-key_lengt]:
+
+        key.shuffle(text[-key_lengt:])
 
         index = key.getitem(i)
 
